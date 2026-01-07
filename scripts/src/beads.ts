@@ -20,6 +20,11 @@ export function escapeShellArg(arg: string): string {
 }
 
 /**
+ * Label used to mark deleted tasks
+ */
+const DELETED_LABEL = 'github-deleted';
+
+/**
  * Execute a beads command and return the output
  */
 export function execBeadsCommand(command: string, returnJson = false): string {
@@ -31,8 +36,11 @@ export function execBeadsCommand(command: string, returnJson = false): string {
     });
     return output.trim();
   } catch (error: any) {
+    const errorMsg = error.stderr || error.message || 'Unknown error';
+    const exitCode = error.status || 'unknown';
     console.error(`Error executing beads command: ${command}`);
-    console.error(error.stderr || error.message);
+    console.error(`Exit code: ${exitCode}`);
+    console.error(`Error details: ${errorMsg}`);
     throw error;
   }
 }
@@ -164,7 +172,7 @@ export function reopenTask(taskId: string): void {
 export function deleteTask(taskId: string): void {
   // Beads doesn't have a delete command, so we close it with a special label
   try {
-    execBeadsCommand(`bd update ${taskId} --add-label ${escapeShellArg('deleted')}`);
+    execBeadsCommand(`bd update ${taskId} --add-label ${escapeShellArg(DELETED_LABEL)}`);
     execBeadsCommand(`bd close ${taskId}`);
   } catch (error) {
     console.warn('Warning: Could not mark task as deleted');

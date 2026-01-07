@@ -46,7 +46,6 @@ describe('beads', () => {
     });
   });
 
-
   describe('execBeadsCommand', () => {
     it('should execute command without JSON format', () => {
       mockedExecSync.mockReturnValue('Success');
@@ -267,7 +266,7 @@ describe('beads', () => {
       deleteTask('bd-1234');
 
       expect(mockedExecSync).toHaveBeenCalledWith(
-        expect.stringContaining("--add-label 'deleted'"),
+        expect.stringContaining("--add-label 'github-deleted'"),
         expect.any(Object)
       );
       expect(mockedExecSync).toHaveBeenCalledWith(
