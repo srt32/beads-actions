@@ -11,6 +11,15 @@ export interface BeadsTask {
 }
 
 /**
+ * Escape a string for safe use in shell commands
+ * Wraps the string in single quotes and escapes any single quotes within
+ */
+export function escapeShellArg(arg: string): string {
+  // Replace single quotes with '\'' (end quote, escaped quote, start quote)
+  return "'" + arg.replace(/'/g, "'\\''") + "'";
+}
+
+/**
  * Execute a beads command and return the output
  */
 export function execBeadsCommand(command: string, returnJson = false): string {
@@ -70,8 +79,7 @@ export function createTask(
   }
 
   // Create the task
-  const escapedTitle = title.replace(/"/g, '\\"');
-  const createCommand = `bd create "${escapedTitle}" -p ${priority}`;
+  const createCommand = `bd create ${escapeShellArg(title)} -p ${priority}`;
   const output = execBeadsCommand(createCommand);
   
   // Extract task ID from output (format: "Created task bd-xxxx")
@@ -83,14 +91,13 @@ export function createTask(
 
   // Update task with description and metadata
   if (body) {
-    const escapedBody = body.replace(/"/g, '\\"').replace(/\n/g, '\\n');
-    execBeadsCommand(`bd update ${taskId} --description "${escapedBody}"`);
+    execBeadsCommand(`bd update ${taskId} --description ${escapeShellArg(body)}`);
   }
 
   // Add labels
   for (const label of labels) {
     try {
-      execBeadsCommand(`bd update ${taskId} --add-label "${label}"`);
+      execBeadsCommand(`bd update ${taskId} --add-label ${escapeShellArg(label)}`);
     } catch (error) {
       console.warn(`Warning: Could not add label ${label}`);
     }
@@ -99,7 +106,7 @@ export function createTask(
   // Store GitHub metadata
   try {
     execBeadsCommand(`bd update ${taskId} --set-metadata github_issue=${issueNumber}`);
-    execBeadsCommand(`bd update ${taskId} --set-metadata github_url="${url}"`);
+    execBeadsCommand(`bd update ${taskId} --set-metadata github_url=${escapeShellArg(url)}`);
   } catch (error) {
     console.warn('Warning: Could not set metadata');
   }
@@ -109,6 +116,9 @@ export function createTask(
 
 /**
  * Update an existing beads task
+ * Note: Labels are additive only. This implementation does not remove labels that
+ * were removed from the GitHub issue. This is a known limitation to keep the sync
+ * logic simple and avoid accidentally removing manually added labels in Beads.
  */
 export function updateTask(
   taskId: string,
@@ -117,20 +127,17 @@ export function updateTask(
   labels: string[]
 ): void {
   // Update title
-  const escapedTitle = title.replace(/"/g, '\\"');
-  execBeadsCommand(`bd update ${taskId} --title "${escapedTitle}"`);
+  execBeadsCommand(`bd update ${taskId} --title ${escapeShellArg(title)}`);
 
   // Update description
   if (body) {
-    const escapedBody = body.replace(/"/g, '\\"').replace(/\n/g, '\\n');
-    execBeadsCommand(`bd update ${taskId} --description "${escapedBody}"`);
+    execBeadsCommand(`bd update ${taskId} --description ${escapeShellArg(body)}`);
   }
 
-  // Sync labels - this is a simplified version
-  // In a real implementation, you'd want to diff and update only changed labels
+  // Sync labels - additive only (does not remove labels)
   for (const label of labels) {
     try {
-      execBeadsCommand(`bd update ${taskId} --add-label "${label}"`);
+      execBeadsCommand(`bd update ${taskId} --add-label ${escapeShellArg(label)}`);
     } catch (error) {
       console.warn(`Warning: Could not add label ${label}`);
     }
@@ -157,7 +164,7 @@ export function reopenTask(taskId: string): void {
 export function deleteTask(taskId: string): void {
   // Beads doesn't have a delete command, so we close it with a special label
   try {
-    execBeadsCommand(`bd update ${taskId} --add-label "deleted"`);
+    execBeadsCommand(`bd update ${taskId} --add-label ${escapeShellArg('deleted')}`);
     execBeadsCommand(`bd close ${taskId}`);
   } catch (error) {
     console.warn('Warning: Could not mark task as deleted');

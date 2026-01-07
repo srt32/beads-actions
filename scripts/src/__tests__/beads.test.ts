@@ -5,7 +5,8 @@ import {
   updateTask,
   closeTask,
   reopenTask,
-  deleteTask
+  deleteTask,
+  escapeShellArg
 } from '../beads';
 import { execSync } from 'child_process';
 
@@ -17,6 +18,34 @@ describe('beads', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
+
+  describe('escapeShellArg', () => {
+    it('should wrap string in single quotes', () => {
+      expect(escapeShellArg('hello')).toBe("'hello'");
+    });
+
+    it('should escape single quotes', () => {
+      expect(escapeShellArg("it's")).toBe("'it'\\''s'");
+    });
+
+    it('should handle multiple single quotes', () => {
+      expect(escapeShellArg("it's a test's")).toBe("'it'\\''s a test'\\''s'");
+    });
+
+    it('should handle empty string', () => {
+      expect(escapeShellArg('')).toBe("''");
+    });
+
+    it('should not escape double quotes', () => {
+      expect(escapeShellArg('say "hello"')).toBe("'say \"hello\"'");
+    });
+
+    it('should handle special characters', () => {
+      expect(escapeShellArg('test$var')).toBe("'test$var'");
+      expect(escapeShellArg('test`cmd`')).toBe("'test`cmd`'");
+    });
+  });
+
 
   describe('execBeadsCommand', () => {
     it('should execute command without JSON format', () => {
@@ -106,7 +135,7 @@ describe('beads', () => {
 
       expect(taskId).toBe('bd-abcd');
       expect(mockedExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('bd create "Test Issue" -p 2'),
+        expect.stringContaining("bd create 'Test Issue' -p 2"),
         expect.any(Object)
       );
     });
@@ -158,10 +187,10 @@ describe('beads', () => {
         .mockReturnValueOnce('Created task bd-abcd')
         .mockReturnValue('');
 
-      createTask(42, 'Test "quoted" title', 'desc', [], 'url');
+      createTask(42, "Test 'quoted' title", 'desc', [], 'url');
 
       expect(mockedExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('Test \\"quoted\\" title'),
+        expect.stringContaining("'Test '\\''quoted'\\'' title'"),
         expect.any(Object)
       );
     });
@@ -182,7 +211,7 @@ describe('beads', () => {
       updateTask('bd-1234', 'New Title', 'New description', ['bug']);
 
       expect(mockedExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('bd update bd-1234 --title "New Title"'),
+        expect.stringContaining("bd update bd-1234 --title 'New Title'"),
         expect.any(Object)
       );
       expect(mockedExecSync).toHaveBeenCalledWith(
@@ -238,7 +267,7 @@ describe('beads', () => {
       deleteTask('bd-1234');
 
       expect(mockedExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('--add-label "deleted"'),
+        expect.stringContaining("--add-label 'deleted'"),
         expect.any(Object)
       );
       expect(mockedExecSync).toHaveBeenCalledWith(

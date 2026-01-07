@@ -148,6 +148,11 @@ The action responds to these GitHub issue events:
 - **reopened**: Reopens the Beads task
 - **deleted**: Marks the task as deleted and closes it
 
+#### Known Limitations
+
+- **Label Synchronization**: Labels are synced additively. When labels are removed from a GitHub issue, they are NOT automatically removed from the corresponding Beads task. This prevents accidentally removing manually added labels in Beads.
+- **Security**: All user input is properly escaped before being passed to shell commands to prevent command injection.
+
 ## Development
 
 ### Prerequisites
