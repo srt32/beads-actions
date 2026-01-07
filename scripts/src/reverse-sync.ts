@@ -28,10 +28,20 @@ async function syncTaskToIssue(
   repo: string,
   task: BeadsTask
 ): Promise<void> {
-  const issueNumber = task.metadata?.github_issue;
+  const issueNumberRaw = task.metadata?.github_issue;
   
-  if (!issueNumber) {
+  if (!issueNumberRaw) {
     console.log(`Task ${task.id} has no linked GitHub issue, skipping`);
+    return;
+  }
+
+  // Parse issue number as integer (metadata might be string or number)
+  const issueNumber = typeof issueNumberRaw === 'number' 
+    ? issueNumberRaw 
+    : parseInt(String(issueNumberRaw), 10);
+
+  if (isNaN(issueNumber) || issueNumber <= 0) {
+    console.warn(`Task ${task.id} has invalid github_issue metadata: ${issueNumberRaw}`);
     return;
   }
 

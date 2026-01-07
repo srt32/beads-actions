@@ -71,6 +71,41 @@ describe('reverse-sync', () => {
       expect(mockOctokit.issues.update).not.toHaveBeenCalled();
     });
 
+    it('should skip tasks with invalid github_issue metadata', async () => {
+      const task = { 
+        id: 'bd-1234', 
+        status: 'open', 
+        title: 'Test',
+        metadata: { github_issue: 'invalid' }
+      };
+
+      await syncTaskToIssue(mockOctokit, owner, repo, task);
+
+      expect(mockOctokit.issues.get).not.toHaveBeenCalled();
+      expect(mockOctokit.issues.update).not.toHaveBeenCalled();
+    });
+
+    it('should handle string issue numbers', async () => {
+      const task = {
+        id: 'bd-1234',
+        status: 'completed',
+        title: 'Test',
+        metadata: { github_issue: '42' }
+      };
+
+      mockOctokit.issues.get.mockResolvedValue({
+        data: { state: 'open', number: 42 }
+      });
+
+      await syncTaskToIssue(mockOctokit, owner, repo, task);
+
+      expect(mockOctokit.issues.get).toHaveBeenCalledWith({
+        owner,
+        repo,
+        issue_number: 42
+      });
+    });
+
     it('should close open GitHub issue when task is completed', async () => {
       const task = {
         id: 'bd-1234',
