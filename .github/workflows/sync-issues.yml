@@ -7,6 +7,9 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Needed to commit and push .beads changes
+      issues: read     # Needed to read issue details
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

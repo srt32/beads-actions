@@ -35,9 +35,10 @@ export function execBeadsCommand(command: string, returnJson = false): string {
       stdio: ['pipe', 'pipe', 'pipe']
     });
     return output.trim();
-  } catch (error: any) {
-    const errorMsg = error.stderr || error.message || 'Unknown error';
-    const exitCode = error.status || 'unknown';
+  } catch (error: unknown) {
+    const err = error as { stderr?: string; message?: string; status?: number };
+    const errorMsg = err.stderr || err.message || 'Unknown error';
+    const exitCode = err.status || 'unknown';
     console.error(`Error executing beads command: ${command}`);
     console.error(`Exit code: ${exitCode}`);
     console.error(`Error details: ${errorMsg}`);
@@ -113,7 +114,7 @@ export function createTask(
 
   // Store GitHub metadata
   try {
-    execBeadsCommand(`bd update ${taskId} --set-metadata github_issue=${issueNumber}`);
+    execBeadsCommand(`bd update ${taskId} --set-metadata github_issue=${escapeShellArg(issueNumber.toString())}`);
     execBeadsCommand(`bd update ${taskId} --set-metadata github_url=${escapeShellArg(url)}`);
   } catch (error) {
     console.warn('Warning: Could not set metadata');
