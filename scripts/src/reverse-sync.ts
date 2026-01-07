@@ -1,24 +1,12 @@
-import { execSync } from 'child_process';
+import { execBeadsCommand, BeadsTask } from './beads';
 import { Octokit } from '@octokit/rest';
-
-interface BeadsTask {
-  id: string;
-  status: string;
-  metadata?: {
-    github_issue?: number;
-    github_url?: string;
-  };
-}
 
 /**
  * Get all tasks from Beads
  */
 function getAllBeadsTasks(): BeadsTask[] {
   try {
-    const output = execSync('bd list --format json', {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
+    const output = execBeadsCommand('bd list', true);
     
     if (!output || output.trim() === '') {
       return [];

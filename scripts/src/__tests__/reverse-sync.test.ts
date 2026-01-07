@@ -1,12 +1,12 @@
 import { getAllBeadsTasks, syncTaskToIssue } from '../reverse-sync';
-import { execSync } from 'child_process';
+import * as beads from '../beads';
 import { Octokit } from '@octokit/rest';
 
 // Mock dependencies
-jest.mock('child_process');
+jest.mock('../beads');
 jest.mock('@octokit/rest');
 
-const mockedExecSync = execSync as jest.MockedFunction<typeof execSync>;
+const mockedBeads = beads as jest.Mocked<typeof beads>;
 const MockedOctokit = Octokit as jest.MockedClass<typeof Octokit>;
 
 describe('reverse-sync', () => {
@@ -28,22 +28,19 @@ describe('reverse-sync', () => {
   describe('getAllBeadsTasks', () => {
     it('should return parsed tasks from beads', () => {
       const mockTasks = [
-        { id: 'bd-1234', status: 'open', metadata: { github_issue: 42 } },
-        { id: 'bd-5678', status: 'closed', metadata: { github_issue: 43 } }
+        { id: 'bd-1234', status: 'open', title: 'Task 1', metadata: { github_issue: 42 } },
+        { id: 'bd-5678', status: 'closed', title: 'Task 2', metadata: { github_issue: 43 } }
       ];
-      mockedExecSync.mockReturnValue(JSON.stringify(mockTasks));
+      mockedBeads.execBeadsCommand.mockReturnValue(JSON.stringify(mockTasks));
 
       const tasks = getAllBeadsTasks();
 
       expect(tasks).toEqual(mockTasks);
-      expect(mockedExecSync).toHaveBeenCalledWith(
-        'bd list --format json',
-        expect.any(Object)
-      );
+      expect(mockedBeads.execBeadsCommand).toHaveBeenCalledWith('bd list', true);
     });
 
     it('should return empty array on error', () => {
-      mockedExecSync.mockImplementation(() => {
+      mockedBeads.execBeadsCommand.mockImplementation(() => {
         throw new Error('Command failed');
       });
 
@@ -53,7 +50,7 @@ describe('reverse-sync', () => {
     });
 
     it('should return empty array for empty output', () => {
-      mockedExecSync.mockReturnValue('');
+      mockedBeads.execBeadsCommand.mockReturnValue('');
 
       const tasks = getAllBeadsTasks();
 
@@ -66,7 +63,7 @@ describe('reverse-sync', () => {
     const repo = 'test-repo';
 
     it('should skip tasks without github_issue metadata', async () => {
-      const task = { id: 'bd-1234', status: 'open' };
+      const task = { id: 'bd-1234', status: 'open', title: 'Test' };
 
       await syncTaskToIssue(mockOctokit, owner, repo, task);
 
@@ -78,6 +75,7 @@ describe('reverse-sync', () => {
       const task = {
         id: 'bd-1234',
         status: 'completed',
+        title: 'Test',
         metadata: { github_issue: 42 }
       };
 
@@ -105,6 +103,7 @@ describe('reverse-sync', () => {
       const task = {
         id: 'bd-1234',
         status: 'closed',
+        title: 'Test',
         metadata: { github_issue: 42 }
       };
 
@@ -127,6 +126,7 @@ describe('reverse-sync', () => {
       const task = {
         id: 'bd-1234',
         status: 'open',
+        title: 'Test',
         metadata: { github_issue: 42 }
       };
 
@@ -148,6 +148,7 @@ describe('reverse-sync', () => {
       const task = {
         id: 'bd-1234',
         status: 'in_progress',
+        title: 'Test',
         metadata: { github_issue: 42 }
       };
 
@@ -169,6 +170,7 @@ describe('reverse-sync', () => {
       const task = {
         id: 'bd-1234',
         status: 'closed',
+        title: 'Test',
         metadata: { github_issue: 42 }
       };
 
@@ -185,6 +187,7 @@ describe('reverse-sync', () => {
       const task = {
         id: 'bd-1234',
         status: 'closed',
+        title: 'Test',
         metadata: { github_issue: 999 }
       };
 
@@ -203,6 +206,7 @@ describe('reverse-sync', () => {
       const task = {
         id: 'bd-1234',
         status: 'closed',
+        title: 'Test',
         metadata: { github_issue: 42 }
       };
 
