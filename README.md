@@ -4,13 +4,17 @@ A reusable GitHub Action that automatically synchronizes GitHub issues with [Bea
 
 ## Overview
 
-This action monitors GitHub issues in your repository and automatically creates, updates, closes, and deletes corresponding tasks in Beads. This allows AI coding agents to access and manage tasks through the Beads system while keeping them in sync with your GitHub issues.
+This action provides bidirectional synchronization between GitHub issues and Beads tasks:
+- **GitHub → Beads**: Creates, updates, closes, and deletes Beads tasks when issues change
+- **Beads → GitHub**: Closes and reopens GitHub issues when tasks are completed or reopened in Beads
+
+This allows AI coding agents to access and manage tasks through the Beads system while keeping them in sync with your GitHub issues.
 
 ## Features
 
-- ✅ **Automatic Synchronization**: Creates Beads tasks when issues are opened
-- ✅ **Bidirectional Updates**: Updates tasks when issues are edited
-- ✅ **State Management**: Closes and reopens tasks based on issue state
+- ✅ **Bidirectional Synchronization**: Two-way sync between GitHub issues and Beads tasks
+- ✅ **Automatic Updates**: Updates tasks/issues when either side changes
+- ✅ **State Management**: Closes and reopens tasks/issues based on status
 - ✅ **Priority Mapping**: Automatically sets task priority based on issue labels (P0-P3)
 - ✅ **Label Sync**: Syncs GitHub labels to Beads task labels
 - ✅ **Metadata Tracking**: Links tasks back to their GitHub issues
@@ -46,6 +50,56 @@ jobs:
 ```
 
 2. That's it! Issues will now automatically sync to Beads.
+
+### Reverse Sync: Beads → GitHub
+
+To also sync Beads task completions back to GitHub issues, add this workflow at `.github/workflows/reverse-sync.yml`:
+
+```yaml
+name: Sync Beads to GitHub Issues
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.beads/**'
+
+jobs:
+  reverse-sync:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install beads
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash
+          echo "$HOME/.beads/bin" >> $GITHUB_PATH
+      
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./scripts
+      
+      - name: Build and run reverse sync
+        run: |
+          npm run build
+          npm run reverse-sync
+        working-directory: ./scripts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+```
+
+This workflow:
+- Triggers when `.beads/` files are pushed to main
+- Reads all Beads tasks with linked GitHub issues
+- Closes GitHub issues when tasks are completed in Beads
+- Reopens GitHub issues when tasks are reopened in Beads
 
 ### Method 2: Self-Hosted Setup
 
