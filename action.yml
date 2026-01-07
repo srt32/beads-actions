@@ -1,0 +1,64 @@
+name: 'Sync GitHub Issues to Beads'
+description: 'Automatically sync GitHub issues to Beads task tracker for AI coding agents'
+author: 'beads-actions'
+
+branding:
+  icon: 'git-branch'
+  color: 'blue'
+
+inputs:
+  github_token:
+    description: 'GitHub token for API access'
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install beads
+      shell: bash
+      run: |
+        curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash
+        echo "$HOME/.beads/bin" >> $GITHUB_PATH
+
+    - name: Initialize beads if needed
+      shell: bash
+      run: |
+        if [ ! -d ".beads" ]; then
+          bd init
+        fi
+
+    - name: Install dependencies
+      shell: bash
+      run: npm ci
+      working-directory: ${{ github.action_path }}/scripts
+
+    - name: Sync issue to beads
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        ISSUE_NUMBER: ${{ github.event.issue.number }}
+        ISSUE_TITLE: ${{ github.event.issue.title }}
+        ISSUE_BODY: ${{ github.event.issue.body }}
+        ISSUE_STATE: ${{ github.event.issue.state }}
+        ISSUE_LABELS: ${{ toJson(github.event.issue.labels) }}
+        ACTION: ${{ github.event.action }}
+        ISSUE_URL: ${{ github.event.issue.html_url }}
+      run: npm start
+      working-directory: ${{ github.action_path }}/scripts
+
+    - name: Commit and push beads changes
+      shell: bash
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        if [ -n "$(git status --porcelain)" ]; then
+          git add .beads/
+          git commit -m "Sync issue #${{ github.event.issue.number }}: ${{ github.event.action }}"
+          git push
+        fi

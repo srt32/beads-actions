@@ -17,7 +17,39 @@ This action monitors GitHub issues in your repository and automatically creates,
 
 ## Usage
 
-### Basic Setup
+### Method 1: Use as a Reusable Action (Recommended)
+
+The simplest way to use this action is as a reusable GitHub Action:
+
+1. Add the workflow file to your repository at `.github/workflows/sync-issues.yml`:
+
+```yaml
+name: Sync GitHub Issues to Beads
+
+on:
+  issues:
+    types: [opened, edited, closed, reopened, deleted]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync to Beads
+        uses: srt32/beads-actions@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+2. That's it! Issues will now automatically sync to Beads.
+
+### Method 2: Self-Hosted Setup
+
+If you prefer to host the sync scripts in your own repository:
 
 1. Add the workflow file to your repository at `.github/workflows/sync-issues.yml`:
 
@@ -81,7 +113,9 @@ jobs:
           fi
 ```
 
-2. Install the sync script dependencies:
+2. Copy the `scripts/` directory from this repository to your repository
+
+3. Install the sync script dependencies:
 
 ```bash
 cd scripts
@@ -89,11 +123,13 @@ npm install
 npm run build
 ```
 
-3. Commit the `scripts/` directory to your repository
+4. Commit the `scripts/` directory to your repository
 
-4. Create or modify issues in your repository - they will automatically sync to Beads!
+5. Create or modify issues in your repository - they will automatically sync to Beads!
 
-### Priority Mapping
+### Configuration
+
+#### Priority Mapping
 
 The action automatically maps GitHub issue labels to Beads task priorities:
 
@@ -102,7 +138,7 @@ The action automatically maps GitHub issue labels to Beads task priorities:
 - **P2**: Default priority → Priority 2
 - **P3/Low**: Labels containing "p3" or "low" → Priority 3
 
-### Issue Events
+#### Issue Events
 
 The action responds to these GitHub issue events:
 
