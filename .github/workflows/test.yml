@@ -1,0 +1,54 @@
+name: Test Scripts
+
+on:
+  push:
+    branches: [ main, copilot/** ]
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/test.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/test.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read  # Only need to read the repository
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scripts/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./scripts
+
+      - name: Run linter
+        run: npm run lint
+        working-directory: ./scripts
+
+      - name: Build TypeScript
+        run: npm run build
+        working-directory: ./scripts
+
+      - name: Run tests
+        run: npm test -- --coverage
+        working-directory: ./scripts
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          directory: ./scripts/coverage
+          flags: scripts
+          fail_ci_if_error: false

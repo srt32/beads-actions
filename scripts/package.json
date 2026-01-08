@@ -1,0 +1,33 @@
+{
+  "name": "beads-sync",
+  "version": "1.0.0",
+  "description": "Sync GitHub issues to Beads task tracker",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "node dist/index.js",
+    "reverse-sync": "node dist/reverse-sync.js",
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src --ext .ts"
+  },
+  "keywords": [
+    "github",
+    "beads",
+    "issue-tracking"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@octokit/rest": "^20.0.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.11",
+    "@types/node": "^20.10.6",
+    "@typescript-eslint/eslint-plugin": "^6.16.0",
+    "@typescript-eslint/parser": "^6.16.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.3.3"
+  }
+}
